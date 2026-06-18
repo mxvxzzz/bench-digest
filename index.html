@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHA Benchmark </title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --st-blue:#03234B;--st-blue-2:#0A3D75;--st-cyan:#39A9DC;--st-green:#00A66C;
+    --st-orange:#F39C12;--st-gray-200:#E5E7EB;--st-bg:#F7F9FC;--panel:#FFFFFF;
+    --text:#17202A;--muted:#667085;--stroke:#D8E0EA;--radius:14px;
+    --shadow:0 10px 28px rgba(3,35,75,.08);
+  }
+  body{font-family:'Inter',sans-serif;background:var(--st-bg);color:var(--text);min-height:100vh;}
+  canvas#particle-canvas{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.55;}
+  .page{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:32px 24px;}
+
+  /* Hero */
+  .hero{background:linear-gradient(135deg,var(--st-blue) 0%,var(--st-blue-2) 60%,#0d4f96 100%);border-radius:20px;padding:36px 40px;display:flex;justify-content:space-between;align-items:flex-start;gap:32px;margin-bottom:28px;box-shadow:0 20px 60px rgba(3,35,75,.28);overflow:hidden;position:relative;}
+  .hero::before{content:'ST';position:absolute;right:220px;top:-20px;font-size:180px;font-weight:900;color:rgba(255,255,255,.04);font-family:'Inter',sans-serif;pointer-events:none;}
+  .hero-left{flex:1;}
+  .hero-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(57,169,220,.18);border:1px solid rgba(57,169,220,.35);border-radius:20px;padding:6px 14px;margin-bottom:18px;}
+  .hero-chip span{width:8px;height:8px;background:#39A9DC;border-radius:50%;display:inline-block;box-shadow:0 0 8px #39A9DC;}
+  .hero-chip p{font-family:'JetBrains Mono',monospace;font-size:11px;color:#a8d4ee;}
+  .hero h1{font-size:clamp(28px,4vw,46px);font-weight:800;color:#fff;line-height:1.1;margin-bottom:10px;}
+  .hero-sub{color:#7eb8d8;font-size:14px;margin-bottom:24px;}
+  .hero-stats{display:flex;gap:16px;flex-wrap:wrap;}
+  .hero-stat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 16px;}
+  .hero-stat label{font-size:10px;color:#7eb8d8;font-family:'JetBrains Mono',monospace;text-transform:uppercase;display:block;margin-bottom:3px;}
+  .hero-stat span{font-size:13px;color:#fff;font-weight:600;font-family:'JetBrains Mono',monospace;}
+
+  /* Terminal */
+  .terminal{background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:18px 20px;width:340px;flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.7;}
+  .term-dots{display:flex;gap:6px;margin-bottom:12px;}
+  .term-dots span{width:12px;height:12px;border-radius:50%;}
+  .term-dots span:nth-child(1){background:#ff5f57;}
+  .term-dots span:nth-child(2){background:#febc2e;}
+  .term-dots span:nth-child(3){background:#28c840;}
+  .prompt{color:#57ab5a;}.cmd{color:#79c0ff;}.comment{color:#6e7681;}
+  div.blink{display:inline-block;width:8px;height:13px;background:#57ab5a;animation:blink 1s step-end infinite;vertical-align:text-bottom;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* Controls */
+  .controls{background:var(--panel);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;box-shadow:var(--shadow);border:1px solid var(--stroke);display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;}
+  .ctrl-group label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-family:'JetBrains Mono',monospace;display:block;margin-bottom:10px;}
+  .btn-group{display:flex;flex-wrap:wrap;gap:6px;}
+  .btn{font-family:'JetBrains Mono',monospace;font-size:11px;color:#344054;border:1px solid #ced8e4;background:#fff;border-radius:8px;padding:7px 11px;cursor:pointer;transition:.15s ease;}
+  .btn:hover{border-color:var(--st-cyan);background:#f4faff;}
+  .btn.active{color:#fff;background:var(--st-blue);border-color:var(--st-blue);}
+
+  /* Legend */
+  .legend{background:var(--panel);border-radius:var(--radius);padding:16px 24px;margin-bottom:24px;box-shadow:var(--shadow);border:1px solid var(--stroke);display:flex;gap:24px;flex-wrap:wrap;align-items:center;}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);font-family:'JetBrains Mono',monospace;}
+  .legend-line{width:32px;height:3px;border-radius:2px;}
+  .legend-line.dashed{background:none;border-top:3px dashed;}
+
+  /* KPI */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+  .kpi{background:var(--panel);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--stroke);border-left:4px solid var(--kpi-color,var(--st-blue));position:relative;}
+  .kpi-name{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px;}
+  .kpi-main{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px;}
+  .kpi-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .rank{position:absolute;top:14px;right:16px;font-size:11px;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+
+  /* Panels */
+  .panel{background:var(--panel);border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow);border:1px solid var(--stroke);margin-bottom:24px;}
+  .panel-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+  .panel-title{font-size:14px;font-weight:700;color:var(--text);}
+  .panel-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px;}
+  .panel-tag{font-size:10px;font-weight:600;background:var(--st-gray-200);color:var(--muted);border-radius:6px;padding:4px 10px;font-family:'JetBrains Mono',monospace;}
+  .chart-box{position:relative;width:100%;height:280px;}
+  .chart-box.lg{height:340px;}
+
+  /* Tab group */
+  .tab-group{display:flex;gap:4px;}
+  .tab-btn{font-family:'JetBrains Mono',monospace;font-size:11px;color:#344054;border:1px solid #ced8e4;background:#fff;border-radius:8px;padding:7px 12px;cursor:pointer;transition:.15s ease;}
+  .tab-btn:hover{border-color:var(--st-cyan);background:#f4faff;}
+  .tab-btn.active{color:#fff;background:var(--st-blue);border-color:var(--st-blue);}
+
+  footer{margin:30px 0 8px;text-align:center;color:#667085;font-family:'JetBrains Mono',monospace;font-size:11px;}
+</style>
+</head>
+<body>
+<canvas id="particle-canvas"></canvas>
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-chip"><span></span><p>STM32MP257 EV1 · OpenSSL 3.2.6 · AArch64 · Cortex-A35</p></div>
+      <h1>SHA Benchmark - STM32MP25<br></h1>
+      <p class="hero-sub">The benchmarks compare five implementations for SHA1, SHA256 and SHA512 :</p>
+      <ul style="color: #abb2bf; margin-left: 20px; line-height: 1.6;">
+        <li>af_alg and cryptodev Provider with/without algorithm</li>
+          <ul style="margin-left: 20px; list-style-type: circle; color: #8a92a3;">
+            <li><strong>Pv-AF_ALG / Pv-Cryptodev (without algo.) :</strong> baseline Provider</li>
+            <li><strong>Pv-AF_ALG / Pv-Cryptodev (with algo.) :</strong> optimized Provider with an algorithm</li>
+          </ul>
+        <li>OpenSSL software</li>
+        <li>The legacy engine devcrypto</li>
+      </ul>
+      <p class="hero-sub" style="margin-top: 1px;">Each measured with across block sizes and over at least 5 seconds.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><label>Algo selected</label><span id="heroSelected">—</span></div>
+        <div class="hero-stat"><label>Best throughput</label><span id="heroBest">—</span></div>
+      </div>
+    </div>
+    <div class="terminal">
+      <div class="term-dots"><span></span><span></span><span></span></div>
+      <div class="comment"># export OPENSSL_MODULES=~/pv_stm32</div>
+      <div><span class="prompt">root@stm32mp257</span>:<span class="cmd">~/bench</span>$ <span style="color: #abb2bf;">./run.sh</span></div>
+      <div><span class="prompt">root@stm32mp257</span>:<span class="cmd">~/bench</span>$ <div class="blink"></div></div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="ctrl-group"><label>Block Size</label><div class="btn-group" id="btnBytes"></div></div>
+    <div class="ctrl-group"><label>Algorithm</label><div class="btn-group" id="btnAlgo"></div></div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend" id="legend"></div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="metrics"></div>
+
+  <!-- Throughput Race -->
+  <div class="panel">
+    <div class="panel-head">
+      <div><div class="panel-title">Throughput Race</div><div class="panel-sub" id="sub1">—</div></div>
+      <div class="panel-tag">MB/s</div>
+    </div>
+    <div class="chart-box"><canvas id="c1"></canvas></div>
+  </div>
+
+  <!-- Throughput Evolution -->
+  <div class="panel">
+    <div class="panel-head">
+      <div><div class="panel-title">Throughput Evolution by Block Size</div><div class="panel-sub" id="sub4">—</div></div>
+      <div class="panel-tag">performance curve</div>
+    </div>
+    <div class="chart-box lg"><canvas id="c4"></canvas></div>
+  </div>
+
+  <!-- CPU Evolution -->
+  <div class="panel">
+    <div class="panel-head">
+      <div><div class="panel-title">CPU Evolution</div><div class="panel-sub" id="sub5">—</div></div>
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="selCpuCore='core0';document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');buildC5()">Core 0</button>
+        <button class="tab-btn" onclick="selCpuCore='core1';document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');buildC5()">Core 1</button>
+        <button class="tab-btn" onclick="selCpuCore='total';document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');buildC5()">Average</button>
+      </div>
+    </div>
+    <div class="chart-box lg"><canvas id="c5"></canvas></div>
+  </div>
+
+  <footer>N updates · in M seconds · 1 final</footer>
+</div>
+
+<script>
+const sizes      = [16, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576];
+const sizeLabels = ["16B", "64B", "128B", "256B", "512B", "1KB", "2KB", "4KB", "8KB", "16KB", "32KB", "64KB", "128KB", "256KB", "512KB", "1MB"];
+const variants   = ["afalg_algo", "afalg_no_algo", "cryptodev_algo", "cryptodev_no_algo", "sw", "engine"];
+const names      = {"afalg_algo": "Pv-AF_ALG(with algo)", "afalg_no_algo": "Pv-AF_ALG (without algo)", "cryptodev_algo": "Pv-Cryptodev (with algo)", "cryptodev_no_algo": "Pv-Cryptodev (without algo)", "sw": "OpenSSL software", "engine": "Engine devcrypto"};
+const colors     = {"afalg_algo": "#0971F0", "afalg_no_algo": "#7AB4F8", "cryptodev_algo": "#00A66C", "cryptodev_no_algo": "#6FD4AA", "sw": "#94A3B8", "engine": "#F39C12"};
+const dashes     = {"afalg_algo": "solid", "afalg_no_algo": "dashed", "cryptodev_algo": "solid", "cryptodev_no_algo": "dashed", "sw": "solid", "engine": "solid"};
+const algos      = ["sha1", "sha256", "sha512"];
+const data = {
+  afalg_algo: {
+    sha1: [43182.48, 64556.55, 67402.97, 69718.12, 71173.03, 71858.52, 71901.47, 72440.41, 72260.99, 72061.23, 71688.69, 71370.37, 70904.94, 70736.8, 70506.39, 70219.58],
+    sha256: [46545.72, 71142.62, 75489.62, 77168.94, 79005.16, 79848.79, 80789.28, 80774.13, 80263.87, 80066.94, 80161.69, 79440.86, 78637.15, 78363.44, 77722.88, 77956.86],
+    sha512: [46627.83, 73363.46, 81016.7, 79335.9, 81775.23, 82477.09, 83294.58, 83588.73, 83305.76, 82364.6, 82332.54, 82435.75, 81675.02, 81111.96, 80478.92, 80275.08],
+  },
+  afalg_no_algo: {
+    sha1: [853.75, 1025.68, 2034.29, 3982.01, 7627.78, 13736.25, 23292.61, 35798.88, 48104.13, 60191.97, 69538.94, 68319.89, 67887.62, 67730.79, 67837.24, 68971.03],
+    sha256: [849.59, 1032.29, 2040.37, 4006.33, 7678.95, 13989.5, 23910.31, 37591.55, 51745.82, 66209.04, 77321.16, 76740.68, 75844.81, 74668.98, 75073.72, 76383.1],
+    sha512: [1309.6, 1740.49, 1863.85, 3656.74, 7057.64, 12915.68, 22658.86, 36283.74, 50951.12, 66886.64, 79386.36, 78743.72, 77872.27, 77163.01, 77727.96, 79147.55],
+  },
+  cryptodev_algo: {
+    sha1: [44225.48, 65776.89, 72661.67, 74468.55, 74191.74, 74418.97, 75199.73, 75693.26, 76020.31, 75175.74, 75166.06, 80382.32, 83626.59, 82463.48, 77544.75, 77903.46],
+    sha256: [46911.32, 72572.02, 78985.35, 83164.92, 85812.82, 86533.1, 86486.47, 86654.91, 86672.9, 87093.72, 86452.59, 91185.45, 93524.45, 92534.06, 86895.88, 87100.07],
+    sha512: [48349.34, 74637.25, 82847.19, 86710.54, 89220.08, 90943.11, 91498.58, 91909.94, 91144.86, 91937.71, 91421.68, 94040.89, 98897.4, 97146.48, 91322.88, 91756.55],
+  },
+  cryptodev_no_algo: {
+    sha1: [836.35, 1022.4, 2032.27, 3994.13, 7591.61, 13779.39, 23749.82, 36777.73, 49630.82, 63068.15, 73258.42, 77950.87, 80325.83, 80022.29, 74212.04, 74308.94],
+    sha256: [832.26, 1016.96, 2027.98, 3984.67, 7667.62, 13932.14, 24486.26, 38890.37, 53741.89, 69439.48, 81826.0, 87492.44, 89159.96, 90039.77, 85652.02, 85634.77],
+    sha512: [1269.57, 1701.71, 1851.7, 3651.21, 7016.41, 12961.37, 23128.88, 37428.08, 52894.66, 70499.31, 84314.91, 91090.87, 94121.13, 94925.64, 89250.18, 89190.67],
+  },
+  sw: {
+    sha1: [60473.93, 82903.43, 87802.22, 90445.67, 91813.63, 92599.15, 92927.58, 93146.78, 93264.64, 93245.92, 93161.41, 93116.37, 93249.75, 93145.85, 92940.95, 92843.85],
+    sha256: [36052.88, 42280.86, 43847.12, 44753.74, 45170.85, 45461.6, 45579.04, 45596.19, 45624.06, 45616.02, 45644.8, 45610.87, 45590.7, 45613.21, 45589.32, 45562.2],
+    sha512: [56084.52, 69405.56, 73429.9, 75535.33, 76880.46, 77510.2, 77816.41, 78010.3, 78127.82, 78091.5, 78091.44, 78124.48, 78081.0, 78061.69, 77943.73, 77848.52],
+  },
+  engine: {
+    sha1: [1055.63, 1317.79, 2226.38, 4434.01, 8724.65, 15529.54, 26777.38, 41576.63, 56575.94, 66118.07, 76999.31, 80719.54, 83054.11, 82048.59, 77128.22, 77884.12],
+    sha256: [1060.06, 1324.18, 2361.57, 4430.72, 8784.7, 15566.7, 27701.87, 43726.17, 61709.74, 72899.9, 86145.52, 90956.82, 93583.59, 92512.98, 86952.53, 87091.59],
+    sha512: [1572.3, 2152.61, 2333.72, 4037.33, 7992.6, 14281.99, 26025.92, 41981.93, 60662.72, 73708.68, 88294.97, 94764.9, 97730.68, 97028.68, 91162.81, 91656.78],
+  },
+};
+const cpuData = {
+  afalg_algo: {
+    sha1: {
+      core0: [55.21, 30.52, 23.51, 19.84, 18.7, 18.47, 17.62, 16.87, 17.03, 16.77, 17.21, 18.18, 19.14, 19.19, 19.38, 19.37],
+      core1: [8.28, 12.42, 13.81, 16.02, 16.9, 18.13, 16.73, 18.31, 16.14, 15.43, 15.68, 17.79, 16.51, 15.52, 15.5, 16.05],
+      total: [31.75, 21.47, 18.66, 17.93, 17.8, 18.3, 17.18, 17.59, 16.59, 16.1, 16.45, 17.98, 17.83, 17.36, 17.44, 17.71],
+    },
+    sha256: {
+      core0: [57.26, 30.58, 24.22, 21.75, 19.72, 18.44, 16.6, 16.39, 18.24, 18.38, 17.95, 18.21, 19.4, 19.37, 20.83, 19.92],
+      core1: [12.4, 15.77, 15.88, 16.08, 17.89, 17.79, 17.7, 18.09, 17.8, 17.93, 16.53, 16.76, 20.0, 18.15, 16.73, 16.99],
+      total: [34.83, 23.17, 20.05, 18.91, 18.8, 18.12, 17.15, 17.24, 18.02, 18.16, 17.24, 17.48, 19.7, 18.76, 18.78, 18.45],
+    },
+    sha512: {
+      core0: [57.26, 31.06, 26.85, 21.19, 20.16, 18.72, 17.49, 16.84, 18.8, 19.56, 18.62, 18.49, 18.78, 19.49, 20.12, 20.28],
+      core1: [12.35, 14.37, 15.34, 16.74, 18.18, 20.49, 20.04, 19.1, 18.7, 19.39, 19.14, 18.75, 18.68, 19.35, 18.25, 19.05],
+      total: [34.8, 22.71, 21.09, 18.96, 19.17, 19.6, 18.77, 17.97, 18.75, 19.48, 18.88, 18.62, 18.73, 19.42, 19.19, 19.66],
+    },
+  },
+  afalg_no_algo: {
+    sha1: {
+      core0: [55.71, 45.05, 45.86, 45.2, 43.32, 39.77, 37.56, 34.61, 28.51, 24.02, 21.17, 22.78, 21.96, 22.24, 23.27, 21.69],
+      core1: [51.42, 64.52, 63.92, 62.44, 58.13, 53.86, 44.91, 38.07, 29.41, 22.11, 15.21, 15.0, 17.65, 16.09, 14.81, 14.67],
+      total: [53.56, 54.78, 54.89, 53.82, 50.73, 46.81, 41.23, 36.34, 28.96, 23.06, 18.19, 18.89, 19.8, 19.16, 19.04, 18.18],
+    },
+    sha256: {
+      core0: [54.87, 45.2, 46.87, 45.83, 42.14, 42.18, 38.83, 33.48, 29.81, 25.51, 20.62, 21.33, 23.23, 23.65, 23.77, 23.75],
+      core1: [52.55, 62.66, 61.9, 62.1, 60.9, 54.61, 47.36, 38.46, 30.54, 22.27, 16.83, 15.76, 17.91, 16.57, 16.91, 16.74],
+      total: [53.71, 53.93, 54.38, 53.97, 51.52, 48.39, 43.09, 35.97, 30.17, 23.89, 18.73, 18.54, 20.57, 20.11, 20.34, 20.24],
+    },
+    sha512: {
+      core0: [58.6, 45.39, 40.65, 41.15, 39.54, 40.63, 38.74, 32.53, 29.03, 22.89, 21.03, 21.98, 24.5, 23.49, 24.9, 24.82],
+      core1: [45.95, 62.47, 67.31, 65.38, 64.32, 58.92, 51.28, 43.08, 31.35, 26.13, 19.73, 19.64, 20.31, 19.68, 19.43, 17.16],
+      total: [52.28, 53.93, 53.98, 53.27, 51.93, 49.78, 45.01, 37.8, 30.19, 24.51, 20.38, 20.81, 22.41, 21.59, 22.16, 20.99],
+    },
+  },
+  cryptodev_algo: {
+    sha1: {
+      core0: [52.6, 34.62, 26.25, 21.69, 18.11, 18.26, 17.87, 15.92, 16.33, 17.62, 16.1, 19.88, 20.61, 20.75, 26.12, 25.63],
+      core1: [13.35, 14.11, 14.52, 14.08, 15.06, 14.66, 14.4, 15.54, 15.2, 14.68, 15.02, 7.31, 8.76, 10.11, 10.26, 9.74],
+      total: [32.98, 24.36, 20.38, 17.89, 16.59, 16.46, 16.14, 15.73, 15.76, 16.15, 15.56, 13.59, 14.68, 15.43, 18.19, 17.68],
+    },
+    sha256: {
+      core0: [56.85, 35.62, 26.16, 22.31, 21.01, 20.12, 19.84, 18.51, 19.96, 18.86, 20.49, 21.42, 21.85, 23.26, 28.31, 28.41],
+      core1: [12.88, 16.53, 14.75, 17.1, 16.02, 17.44, 15.71, 16.13, 16.23, 17.36, 14.69, 8.75, 8.43, 9.88, 10.17, 9.3],
+      total: [34.87, 26.07, 20.45, 19.7, 18.52, 18.78, 17.77, 17.32, 18.09, 18.11, 17.59, 15.09, 15.14, 16.57, 19.24, 18.86],
+    },
+    sha512: {
+      core0: [57.79, 35.13, 26.22, 23.9, 21.53, 18.39, 19.23, 19.32, 20.08, 18.55, 18.83, 22.42, 24.49, 26.88, 28.59, 29.79],
+      core1: [15.87, 15.81, 16.7, 17.28, 18.84, 18.75, 18.67, 19.96, 19.07, 18.71, 19.0, 9.41, 9.61, 10.21, 9.21, 9.65],
+      total: [36.83, 25.47, 21.46, 20.59, 20.19, 18.57, 18.95, 19.64, 19.57, 18.63, 18.91, 15.92, 17.05, 18.55, 18.9, 19.72],
+    },
+  },
+  cryptodev_no_algo: {
+    sha1: {
+      core0: [55.79, 46.12, 45.75, 43.65, 41.59, 41.19, 36.81, 29.56, 24.74, 19.83, 15.02, 14.79, 14.88, 16.65, 17.28, 16.85],
+      core1: [50.82, 62.78, 63.59, 62.23, 58.94, 53.38, 45.31, 40.13, 29.54, 20.08, 15.73, 13.75, 12.6, 14.68, 16.43, 15.32],
+      total: [53.3, 54.45, 54.67, 52.94, 50.27, 47.28, 41.06, 34.84, 27.14, 19.95, 15.38, 14.27, 13.74, 15.66, 16.86, 16.09],
+    },
+    sha256: {
+      core0: [56.98, 45.3, 46.77, 45.69, 43.06, 43.18, 37.56, 31.96, 27.41, 22.81, 17.23, 15.75, 17.5, 16.12, 20.21, 19.65],
+      core1: [49.88, 62.25, 62.77, 62.17, 59.32, 55.45, 49.55, 38.58, 32.91, 24.9, 17.71, 17.32, 15.49, 17.72, 17.28, 17.42],
+      total: [53.43, 53.77, 54.77, 53.93, 51.19, 49.31, 43.55, 35.27, 30.16, 23.85, 17.47, 16.54, 16.5, 16.92, 18.75, 18.54],
+    },
+    sha512: {
+      core0: [60.09, 47.33, 40.93, 40.78, 40.14, 39.59, 34.99, 31.22, 27.12, 20.08, 16.89, 14.88, 16.17, 15.27, 18.6, 18.17],
+      core1: [43.61, 61.41, 66.59, 66.03, 62.14, 58.07, 53.0, 45.99, 36.76, 26.95, 18.79, 16.42, 13.51, 15.8, 20.14, 19.13],
+      total: [51.85, 54.37, 53.76, 53.41, 51.14, 48.83, 44.0, 38.61, 31.94, 23.52, 17.84, 15.65, 14.84, 15.54, 19.37, 18.65],
+    },
+  },
+  sw: {
+    sha1: {
+      core0: [100.0, 99.8, 100.0, 99.8, 100.0, 100.0, 99.8, 99.8, 99.8, 99.81, 100.0, 100.0, 100.0, 99.91, 99.94, 99.95],
+      core1: [3.39, 2.0, 2.8, 3.01, 2.58, 2.2, 3.77, 2.78, 2.76, 2.33, 2.53, 3.44, 2.73, 2.55, 3.16, 2.83],
+      total: [51.7, 50.9, 51.4, 51.41, 51.29, 51.1, 51.78, 51.29, 51.28, 51.07, 51.27, 51.72, 51.37, 51.23, 51.55, 51.39],
+    },
+    sha256: {
+      core0: [99.8, 100.0, 99.8, 100.0, 99.8, 99.8, 99.8, 100.0, 100.0, 100.0, 99.82, 100.0, 100.0, 99.91, 99.96, 100.0],
+      core1: [2.4, 2.4, 3.0, 2.82, 2.4, 2.0, 3.61, 2.61, 2.54, 3.78, 2.85, 3.36, 2.67, 2.33, 2.73, 2.51],
+      total: [51.1, 51.2, 51.4, 51.41, 51.1, 50.9, 51.7, 51.3, 51.27, 51.89, 51.33, 51.68, 51.34, 51.12, 51.34, 51.26],
+    },
+    sha512: {
+      core0: [100.0, 100.0, 100.0, 100.0, 99.8, 100.0, 100.0, 99.8, 99.8, 99.81, 99.81, 99.83, 100.0, 99.92, 100.0, 99.96],
+      core1: [2.58, 2.4, 2.62, 3.19, 2.59, 2.58, 2.99, 2.61, 2.0, 4.1, 2.24, 2.62, 3.35, 2.98, 2.95, 3.09],
+      total: [51.29, 51.2, 51.31, 51.59, 51.2, 51.29, 51.49, 51.2, 50.9, 51.95, 51.02, 51.23, 51.67, 51.45, 51.48, 51.52],
+    },
+  },
+  engine: {
+    sha1: {
+      core0: [97.67, 97.69, 98.66, 97.88, 96.72, 98.15, 84.38, 67.37, 53.56, 39.69, 25.86, 24.91, 22.76, 22.29, 27.25, 25.85],
+      core1: [5.46, 5.22, 4.63, 4.08, 6.03, 4.06, 5.86, 5.2, 5.53, 10.98, 10.93, 10.7, 10.42, 9.11, 10.86, 10.22],
+      total: [51.56, 51.45, 51.64, 50.98, 51.38, 51.11, 45.12, 36.29, 29.55, 25.34, 18.39, 17.8, 16.59, 15.7, 19.05, 18.04],
+    },
+    sha256: {
+      core0: [98.06, 98.07, 98.26, 98.07, 98.85, 96.33, 87.73, 63.74, 56.03, 42.11, 31.7, 25.85, 19.58, 23.44, 28.53, 28.21],
+      core1: [4.84, 5.05, 4.66, 5.04, 4.47, 6.03, 4.46, 5.02, 3.86, 10.64, 9.77, 10.73, 10.09, 9.63, 9.92, 9.71],
+      total: [51.45, 51.56, 51.46, 51.55, 51.66, 51.18, 46.09, 34.38, 29.95, 26.38, 20.73, 18.29, 14.83, 16.54, 19.23, 18.96],
+    },
+    sha512: {
+      core0: [97.68, 98.27, 98.27, 97.69, 98.07, 97.07, 90.67, 76.35, 61.29, 47.05, 33.2, 28.73, 28.78, 27.07, 29.39, 29.0],
+      core1: [4.47, 4.27, 4.26, 5.24, 4.26, 7.27, 4.59, 4.27, 4.45, 11.3, 11.52, 11.17, 9.83, 10.28, 10.08, 10.13],
+      total: [51.08, 51.27, 51.27, 51.46, 51.16, 52.17, 47.63, 40.31, 32.87, 29.17, 22.36, 19.95, 19.3, 18.68, 19.73, 19.57],
+    },
+  },
+};
+let selBytes = 13;
+let selAlgo  = 1;
+let selCpuCore = 'core0';
+const ALGO_LABELS = {sha1:'SHA-1', sha256:'SHA-256', sha512:'SHA-512'};
+const CPU_LABELS  = {core0:'Core 0', core1:'Core 1', total:'Average'};
+let c1,c4,c5;
+
+function fmtKbs(v){ if(v===null||v===undefined) return '—'; return v>=1000?(v/1000).toFixed(1)+' MB/s':v.toFixed(0)+' KB/s'; }
+function fmtPct(v){ return (v===null||v===undefined)?'—':v.toFixed(1)+'%'; }
+function alpha(hex,a){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
+function tickStyle(size=11){ return {color:'#8aa4b8',font:{family:'JetBrains Mono',size}}; }
+function gridOpts(){ return {color:'rgba(148,163,184,.08)'}; }
+const _monoFont = {family:'JetBrains Mono',size:11};
+function chartBase(){ return {responsive:true,maintainAspectRatio:false,animation:{duration:900,easing:'easeOutQuart'},plugins:{legend:{labels:{color:'#b8c7d7',font:_monoFont}},tooltip:{backgroundColor:'rgba(3,35,75,.96)',borderColor:'rgba(57,169,220,.45)',borderWidth:1,titleColor:'#fff',bodyColor:'#e9f4ff',padding:12}}}; }
+function getCpu(v,algo,bi,key){ return cpuData?.[v]?.[algo]?.[key]?.[bi] ?? null; }
+function dashStyle(v){ return dashes[v]==='dashed'?[6,4]:undefined; }
+
+function bestVariant(algo,bi){
+  let best=null,val=-Infinity;
+  variants.forEach(v=>{ const x=data[v][algo][bi]||0; if(x>val){val=x;best=v;} });
+  return {variant:best,value:val};
+}
+
+function buildLegend(){
+  document.getElementById('legend').innerHTML=variants.map(v=>{
+    const dash=dashes[v]==='dashed';
+    return `<div class="legend-item">
+      <div class="legend-line${dash?' dashed':''}" style="${dash?'border-color:'+colors[v]:'background:'+colors[v]}"></div>
+      <span>${names[v]}</span>
+    </div>`;
+  }).join('');
+}
+
+function buildButtons(){
+  const bEl=document.getElementById('btnBytes');
+  sizeLabels.forEach((lbl,i)=>{ const b=document.createElement('button');b.className='btn'+(i===selBytes?' active':'');b.textContent=lbl;b.onclick=()=>{selBytes=i;document.querySelectorAll('#btnBytes .btn').forEach((x,j)=>x.classList.toggle('active',j===i));update();};bEl.appendChild(b); });
+  const aEl=document.getElementById('btnAlgo');
+  algos.forEach((a,i)=>{ const b=document.createElement('button');b.className='btn'+(i===selAlgo?' active':'');b.textContent=ALGO_LABELS[a];b.onclick=()=>{selAlgo=i;document.querySelectorAll('#btnAlgo .btn').forEach((x,j)=>x.classList.toggle('active',j===i));update();};aEl.appendChild(b); });
+}
+
+function buildMetrics(){
+  const algo=algos[selAlgo],bi=selBytes,best=bestVariant(algo,bi);
+  document.getElementById('heroSelected').textContent=`${ALGO_LABELS[algo]} · ${sizeLabels[bi]}`;
+  document.getElementById('heroBest').textContent=best.variant?`${names[best.variant]} · ${fmtKbs(best.value)}`:'—';
+  const ranked=[...variants].sort((a,b)=>(data[b][algo][bi]||0)-(data[a][algo][bi]||0));
+  document.getElementById('metrics').innerHTML=ranked.map((v,i)=>{
+    const val=data[v][algo][bi];
+    const cpu=getCpu(v,algo,bi,'total');
+    return `<div class="kpi" style="--kpi-color:${colors[v]}"><div class="kpi-name">${names[v]}</div><div class="kpi-main">${fmtKbs(val)}</div><div class="kpi-sub">CPU avg ${fmtPct(cpu)}</div><div class="rank">#${i+1}</div></div>`;
+  }).join('');
+}
+
+function buildC1(){
+  if(c1) c1.destroy();
+  const algo=algos[selAlgo],bi=selBytes;
+  document.getElementById('sub1').textContent=`${ALGO_LABELS[algo]} · ${sizeLabels[bi]} · comparaison`;
+  c1=new Chart(document.getElementById('c1'),{
+    type:'bar',
+    data:{
+      labels:variants.map(v=>names[v]),
+      datasets:[{
+        label:'Throughput',
+        data:variants.map(v=>data[v][algo][bi]),
+        backgroundColor:variants.map(v=>alpha(colors[v],.58)),
+        borderColor:variants.map(v=>colors[v]),
+        borderWidth:2,borderRadius:14,hoverBorderWidth:3
+      }]
+    },
+    options:{...chartBase(),layout:{padding:0},scales:{x:{ticks:tickStyle(),grid:gridOpts()},y:{ticks:{...tickStyle(),callback:v=>fmtKbs(v)},grid:gridOpts()}},plugins:{...chartBase().plugins,legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtKbs(c.parsed.y)}}}}
+  });
+}
+
+function buildC4(){
+  if(c4) c4.destroy();
+  const algo=algos[selAlgo];
+  document.getElementById('sub4').textContent=`${ALGO_LABELS[algo]} · block-size sweep`;
+  c4=new Chart(document.getElementById('c4'),{
+    type:'line',
+    data:{
+      labels:sizeLabels,
+      datasets:variants.map(v=>{
+        const dash=dashStyle(v);
+        return {
+          label:names[v],
+          data:data[v][algo],
+          borderColor:colors[v],
+          backgroundColor:alpha(colors[v],.07),
+          fill:true,
+          borderWidth:3,
+          borderDash:dash,
+          pointRadius:4,pointHoverRadius:7,
+          pointBackgroundColor:colors[v],
+          tension:.42,spanGaps:true
+        };
+      })
+    },
+    options:{...chartBase(),interaction:{mode:'index',intersect:false},scales:{x:{ticks:{...tickStyle(10),maxRotation:45},grid:gridOpts()},y:{ticks:{...tickStyle(),callback:v=>fmtKbs(v)},grid:gridOpts()}},plugins:{...chartBase().plugins,tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtKbs(c.parsed.y)}}}}
+  });
+}
+
+function buildC5(){
+  if(c5) c5.destroy();
+  const algo=algos[selAlgo];
+  document.getElementById('sub5').textContent=`${ALGO_LABELS[algo]} · ${CPU_LABELS[selCpuCore]}`;
+  c5=new Chart(document.getElementById('c5'),{
+    type:'line',
+    data:{
+      labels:sizeLabels,
+      datasets:variants.map(v=>{
+        const dash=dashStyle(v);
+        return {
+          label:names[v],
+          data:cpuData[v][algo][selCpuCore],
+          borderColor:colors[v],
+          backgroundColor:alpha(colors[v],.07),
+          fill:true,
+          borderWidth:3,
+          borderDash:dash,
+          pointRadius:4,pointHoverRadius:7,
+          pointBackgroundColor:colors[v],
+          tension:.42,spanGaps:true
+        };
+      })
+    },
+    options:{...chartBase(),interaction:{mode:'index',intersect:false},scales:{x:{ticks:{...tickStyle(10),maxRotation:45},grid:gridOpts()},y:{min:0,max:100,ticks:{...tickStyle(),callback:v=>v+'%'},grid:gridOpts()}},plugins:{...chartBase().plugins,tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtPct(c.parsed.y)}}}}
+  });
+}
+
+function update(){ buildMetrics(); buildC1(); buildC4(); buildC5(); }
+
+const canvas=document.getElementById('particle-canvas'),ctx=canvas.getContext('2d');
+let W,H,particles=[],traces=[],tick=0;
+function makeTrace(){ const y=Math.random()*H,x=-80-Math.random()*W*.25; return {x,y,len:80+Math.random()*180,speed:.55+Math.random()*1.35,alpha:.28+Math.random()*.36,turn:Math.random()>.55}; }
+function resize(){
+  W=canvas.width=innerWidth;H=canvas.height=innerHeight;
+  particles=Array.from({length:Math.min(190,Math.floor(W*H/9000))},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.42,vy:(Math.random()-.5)*.42,r:Math.random()*1.7+.45,p:Math.random()*Math.PI*2}));
+  traces=Array.from({length:Math.min(34,Math.floor(W/55))},()=>makeTrace());
+}
+function drawTrace(t){
+  ctx.save();ctx.globalAlpha=t.alpha;
+  const grad=ctx.createLinearGradient(t.x,t.y,t.x+t.len,t.y);
+  grad.addColorStop(0,'rgba(56,189,248,0)');grad.addColorStop(.45,'rgba(56,189,248,.9)');grad.addColorStop(1,'rgba(52,211,153,0)');
+  ctx.shadowColor='rgba(56,189,248,.75)';ctx.shadowBlur=14;ctx.strokeStyle=grad;ctx.lineWidth=2.1;
+  ctx.beginPath();ctx.moveTo(t.x,t.y);ctx.lineTo(t.x+t.len,t.y);
+  if(t.turn){ctx.lineTo(t.x+t.len+42,t.y+34);}
+  ctx.stroke();ctx.restore();
+}
+function loop(){
+  tick+=.01;ctx.clearRect(0,0,W,H);
+  for(const t of traces){t.x+=t.speed;if(t.x>W+160)Object.assign(t,makeTrace());drawTrace(t);}
+  for(const p of particles){
+    p.x+=p.vx;p.y+=p.vy;p.p+=.035;
+    if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+    const glow=.42+.24*Math.sin(p.p);
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.shadowColor='rgba(125,211,252,.8)';ctx.shadowBlur=8;ctx.fillStyle=`rgba(125,211,252,${glow})`;ctx.fill();ctx.shadowBlur=0;
+  }
+  for(let i=0;i<particles.length;i++)for(let j=i+1;j<particles.length;j++){
+    const a=particles[i],b=particles[j],dx=a.x-b.x,dy=a.y-b.y,dist=Math.hypot(dx,dy);
+    if(dist<135){ctx.strokeStyle=`rgba(56,189,248,${(1-dist/135)*.26})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+  }
+  requestAnimationFrame(loop);
+}
+addEventListener('resize',resize);resize();loop();
+buildLegend();buildButtons();update();
+</script>
+</body>
+</html>
