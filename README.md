@@ -4,7 +4,7 @@ In OpenSSL terms, a provider is a unit of code that offers implementations for c
 
 STM32 Provider offloads cryptographic operations for security peripherals embedded in ST MPUs, through the Linux AF_ALG and Cryptodev.
 
-Here is a overviweuw of the CryptoAPI architecture, from User space to hardware
+Here is a overviweuw of the CryptoAPI architecture, from User space to hardware :
 
 # CryptoAPI Architecture with STM32MPU Provider  
 
