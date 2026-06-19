@@ -8,7 +8,7 @@ Here is a overviweuw of the CryptoAPI architecture, from User space to hardware 
 
 # CryptoAPI Architecture with STM32MPU Provider  
 
-![Architecture Crypto](images/stprovider.svg)
+![Architecture Crypto](images/drawio.svg)
 
 # Current algorithm implemented
 
