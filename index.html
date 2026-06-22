@@ -68,8 +68,8 @@
 
   /* KPI */
   .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
-  .kpi{background:var(--panel);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--kpi-color,var(--st-blue));position:relative;}
-  .kpi-name{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px;padding-right:24px;}
+  .kpi{background:var(--panel);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--stroke);border-left:4px solid var(--kpi-color,var(--st-blue));position:relative;}
+  .kpi-name{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px;}
   .kpi-main{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px;}
   .kpi-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
   .rank{position:absolute;top:14px;right:16px;font-size:11px;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;}
@@ -102,10 +102,10 @@
       <h1>SHA Benchmark - STM32MP25<br></h1>
       <p class="hero-sub">The benchmarks compare five implementations for SHA1, SHA256 and SHA512 :</p>
       <ul style="color: #abb2bf; margin-left: 20px; line-height: 1.6;">
-        <li>af_alg and cryptodev Provider with/without algorithm</li>
+        <li>af_alg and cryptodev Provider with/without optim</li>
         <ul style="margin-left: 20px; list-style-type: circle; color: #8a92a3;">
-          <li><strong>Pv-AF_ALG / Pv-Cryptodev (without algo.) :</strong> baseline Provider</li>
-          <li><strong>Pv-AF_ALG / Pv-Cryptodev (with algo.) :</strong> optimized Provider with an algorithm</li>
+          <li><strong>Pv-AF_ALG / Pv-Cryptodev (without optim) :</strong> baseline Provider</li>
+          <li><strong>Pv-AF_ALG / Pv-Cryptodev (with optim) :</strong> optimized Provider</li>
         </ul>
         <li>OpenSSL software</li>
         <li>The legacy engine devcrypto</li>
@@ -168,7 +168,7 @@
 const sizes      = [16, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576];
 const sizeLabels = ["16B", "64B", "128B", "256B", "512B", "1KB", "2KB", "4KB", "8KB", "16KB", "32KB", "64KB", "128KB", "256KB", "512KB", "1MB"];
 const variants   = ["afalg_algo", "afalg_no_algo", "cryptodev_algo", "cryptodev_no_algo", "sw", "engine"];
-const names      = {"afalg_algo": "Pv-AF_ALG(with algo)", "afalg_no_algo": "Pv-AF_ALG (without algo)", "cryptodev_algo": "Pv-Cryptodev (with algo)", "cryptodev_no_algo": "Pv-Cryptodev (without algo)", "sw": "OpenSSL software", "engine": "Engine devcrypto"};
+const names      = {"afalg_algo": "Pv-AF_ALG(with optim)", "afalg_no_algo": "Pv-AF_ALG (without optim)", "cryptodev_algo": "Pv-Cryptodev (with optim)", "cryptodev_no_algo": "Pv-Cryptodev (without optim)", "sw": "OpenSSL software", "engine": "Engine devcrypto"};
 const colors     = {"afalg_algo": "#0971F0", "afalg_no_algo": "#7AB4F8", "cryptodev_algo": "#00A66C", "cryptodev_no_algo": "#6FD4AA", "sw": "#94A3B8", "engine": "#F39C12"};
 const dashes     = {"afalg_algo": "solid", "afalg_no_algo": "dashed", "cryptodev_algo": "solid", "cryptodev_no_algo": "dashed", "sw": "solid", "engine": "solid"};
 const algos      = ["sha1", "sha256", "sha512"];
