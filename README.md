@@ -16,8 +16,8 @@ See the latest performance reports here:
 
 ## For Digest :
 
-👉 https://mxvxzzz.github.io/bench-digest/digest.html
+👉 https://mxvxzzz.github.io/stm32mpu-benchmarks/digest.html
 
 ## For cipher : AES : ECB/CBC/CTR (128/192/256) :
 
-👉 https://mxvxzzz.github.io/bench-digest/cipher.html
+👉 https://mxvxzzz.github.io/stm32mpu-benchmarks/cipher.html
