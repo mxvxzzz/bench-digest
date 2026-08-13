@@ -10,6 +10,10 @@ Here is a overviweuw of the CryptoAPI architecture, from User space to hardware 
 
 ![Architecture Crypto](images/drawio.svg)
 
+## Related project
+
+👉 [STM32 Provider repository](https://github.com/mxvxzzz/stm32-provider)
+
 # Benchmark Results on STM32MP25 :
 
 See the latest performance reports here:
