@@ -14,7 +14,7 @@ Here is a overviweuw of the CryptoAPI architecture, from User space to hardware 
 
 See the latest performance reports here:
 
-## For Digest :
+## For Digest : SHA-1, SHA-256, and SHA-512 :
 
 👉 https://mxvxzzz.github.io/stm32mpu-benchmarks/digest.html
 
