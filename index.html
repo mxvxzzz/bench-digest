@@ -3,13 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>STM32MPU Benchmarks</title>
+  <title>STM32MPU Benchmark Reports</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 60px auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      color: #0f172a;
+    }
+
+    .header p {
+      margin-top: 12px;
+      font-size: 1.1rem;
+      color: #475569;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #1d4ed8;
+      font-size: 1.4rem;
+    }
+
+    .card p {
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .card a {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 16px;
+      background-color: #1d4ed8;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .card a:hover {
+      background-color: #1e40af;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.95rem;
+      color: #64748b;
+    }
+  </style>
 </head>
 <body>
-  <h1>STM32MPU Benchmark Reports</h1>
-  <ul>
-    <li><a href="digest.html">Digest Benchmarks</a></li>
-    <li><a href="cipher.html">Cipher Benchmarks</a></li>
-  </ul>
+  <div class="container">
+    <div class="header">
+      <h1>STM32MPU Benchmark Reports</h1>
+      <p>
+        Performance reports for cryptographic operations offloaded through the STM32 Provider.
+      </p>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h2>Digest Benchmarks</h2>
+        <p>
+          View benchmark results for digest algorithms and performance comparisons.
+        </p>
+        <a href="digest.html">Open Digest Report</a>
+      </div>
+
+      <div class="card">
+        <h2>Cipher Benchmarks</h2>
+        <p>
+          View benchmark results for AES cipher modes: ECB, CBC, and CTR with 128/192/256-bit keys.
+        </p>
+        <a href="cipher.html">Open Cipher Report</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      STM32MPU Provider – GitHub Pages
+    </div>
+  </div>
 </body>
 </html>
